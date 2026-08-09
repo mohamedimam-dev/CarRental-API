@@ -16,7 +16,6 @@ namespace CarRental.API.DTOs.Customers
         [StringLength(20)]
         public string DriverLicenseNumber { get; set; } = string.Empty;
 
-        [Range(1, int.MaxValue)]
-        public int CreatedByUserId { get; set; }
+
     }
 }

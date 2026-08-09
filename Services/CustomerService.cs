@@ -15,10 +15,12 @@ namespace CarRental.API.Services
             _context = context;
         }
 
-        public async Task<ServiceResult<CustomerDTO>> AddAsync(AddCustomerDTO dto)
+        public async Task<ServiceResult<CustomerDTO>> AddAsync(
+            AddCustomerDTO dto,
+            int createdByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+                .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<CustomerDTO>
@@ -37,7 +39,7 @@ namespace CarRental.API.Services
                 Name = dto.Name,
                 ContactInformation = dto.ContactInformation,
                 DriverLicenseNumber = dto.DriverLicenseNumber,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             _context.Customers.Add(customer);
@@ -56,7 +58,6 @@ namespace CarRental.API.Services
 
             return ServiceResult<CustomerDTO>.Success(customerDto);
         }
-
         public async Task<ServiceResult<CustomerDTO>> GetByIdAsync(int customerId)
         {
             CustomerDTO? customer = await _context.Customers

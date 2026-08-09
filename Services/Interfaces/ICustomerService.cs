@@ -8,8 +8,10 @@ namespace CarRental.API.Services.Interfaces
         Task<List<CustomerListDTO>> GetAllAsync();
 
         Task<ServiceResult<CustomerDTO>> GetByIdAsync(int customerId);
-       
-        Task<ServiceResult<CustomerDTO>> AddAsync(AddCustomerDTO dto);
+
+        Task<ServiceResult<CustomerDTO>> AddAsync(
+            AddCustomerDTO dto,
+            int createdByUserId);
 
         Task<ServiceResult<CustomerDTO>> UpdateAsync(
             int customerId,
