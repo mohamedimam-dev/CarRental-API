@@ -1,6 +1,7 @@
-﻿using Azure;
+﻿
 using CarRental.API.Common;
 using CarRental.API.DTOs.Customers;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,9 +16,23 @@ namespace CarRental.API.Controllers
     public class CustomersController : ControllerBase
     {
         private readonly ICustomerService _customerService;
-        public CustomersController(ICustomerService customerService)
+        private readonly IAuditLogService _auditLogService;
+        public CustomersController(
+          ICustomerService customerService,
+          IAuditLogService auditLogService)
         {
             _customerService = customerService;
+            _auditLogService = auditLogService;
+        }
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = 0;
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(userIdClaim, out userId);
         }
 
         [HttpGet("All", Name = "GetAllCustomers")]
@@ -58,10 +73,7 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            string? userIdClaim =
-                User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (!int.TryParse(userIdClaim, out int createdByUserId))
+            if (!TryGetCurrentUserId(out int createdByUserId))
                 return Unauthorized();
 
             ServiceResult<CustomerDTO> result =
@@ -111,6 +123,17 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+
+                    if (!TryGetCurrentUserId(out int userId))
+                        return Unauthorized();
+
+                    _auditLogService.Add(
+                        userId,
+                        enAuditAction.Update.ToString(),
+                        enAuditEntity.Customer.ToString(),
+                        customerId,
+                        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+
                     return Ok(result.Data);
 
                 default:
@@ -137,7 +160,17 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+                    if (!TryGetCurrentUserId(out int userId))
+                        return Unauthorized();
+
+                    _auditLogService.Add(
+                        userId,
+                        enAuditAction.Delete.ToString(),
+                        enAuditEntity.Customer.ToString(),
+                        customerId,
+                        HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
                     return NoContent();
+
 
                 default:
                     return StatusCode(StatusCodes.Status500InternalServerError);
