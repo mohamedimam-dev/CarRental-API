@@ -1,5 +1,6 @@
 ﻿using CarRental.API.DTOs.Auth;
 using CarRental.API.DTOs.Users;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +19,33 @@ namespace CarRental.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IConfiguration _configuration;
+        private readonly ISecurityLogService _securityLogService;
 
         public AuthController(
-            IUserService userService,
-            IConfiguration configuration)
+          IUserService userService,
+          IConfiguration configuration,
+          ISecurityLogService securityLogService)
         {
             _userService = userService;
             _configuration = configuration;
+            _securityLogService = securityLogService;
+        }
+
+        private void LogSecurityEvent(
+          enSecurityEventType eventType,
+          int? userId)
+        {
+            string ipAddress =
+                HttpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "Unknown";
+
+            string endpoint = HttpContext.Request.Path;
+
+            _securityLogService.AddLog(
+                eventType.ToString(),
+                userId,
+                ipAddress,
+                endpoint);
         }
 
         [HttpPost("Login")]
@@ -42,18 +63,36 @@ namespace CarRental.API.Controllers
 
             // التحقق من وجود المستخدم
             if (user == null)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.LoginFailed,
+                    null);
+
                 return Unauthorized("Invalid username or password.");
+            }
 
             // التحقق من كلمة المرور
             bool isValidPassword =
                 BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash);
 
             if (!isValidPassword)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.LoginFailed,
+                    user.UserId);
+
                 return Unauthorized("Invalid username or password.");
+            }
 
             // التحقق من أن الحساب مفعل
             if (!user.IsActive)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.InactiveAccount,
+                    user.UserId);
+
                 return Unauthorized("Your account is inactive.");
+            }
 
             // إنشاء الـ Claims
             var claims = new[]
@@ -112,6 +151,10 @@ namespace CarRental.API.Controllers
                     StatusCodes.Status500InternalServerError,
                     "Failed to save refresh token.");
             }
+
+            LogSecurityEvent(
+                enSecurityEventType.LoginSucceeded,
+                user.UserId);
 
             // إرجاع التوكنات
             return Ok(new TokenResponseDTO
