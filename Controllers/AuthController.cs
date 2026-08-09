@@ -188,19 +188,41 @@ namespace CarRental.API.Controllers
                 await _userService.GetUserForLoginAsync(request.UserName);
 
             if (user == null)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.RefreshTokenFailed,
+                    null);
+
                 return Unauthorized("Invalid refresh request.");
+            }
 
             if (user.RefreshTokenRevokedAt != null)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.RefreshTokenRevoked,
+                    user.UserId);
+
                 return Unauthorized("Refresh token has been revoked.");
+            }
 
             if (!user.RefreshTokenExpiresAt.HasValue ||
                 user.RefreshTokenExpiresAt.Value <= DateTime.UtcNow)
             {
+                LogSecurityEvent(
+                    enSecurityEventType.RefreshTokenExpired,
+                    user.UserId);
+
                 return Unauthorized("Refresh token has expired.");
             }
 
             if (string.IsNullOrWhiteSpace(user.RefreshTokenHash))
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.RefreshTokenFailed,
+                    user.UserId);
+
                 return Unauthorized("Invalid refresh token.");
+            }
 
             bool isValidRefreshToken =
                 BCrypt.Net.BCrypt.Verify(
@@ -208,7 +230,13 @@ namespace CarRental.API.Controllers
                     user.RefreshTokenHash);
 
             if (!isValidRefreshToken)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.RefreshTokenFailed,
+                    user.UserId);
+
                 return Unauthorized("Invalid refresh token.");
+            }
 
             // إنشاء Claims
             var claims = new[]
@@ -259,6 +287,10 @@ namespace CarRental.API.Controllers
                     "Failed to update refresh token.");
             }
 
+            LogSecurityEvent(
+                enSecurityEventType.RefreshTokenSucceeded,
+                user.UserId);
+
             return Ok(new TokenResponseDTO
             {
                 AccessToken = accessToken,
@@ -280,10 +312,22 @@ namespace CarRental.API.Controllers
 
             // لا نكشف هل المستخدم موجود أم لا
             if (user == null)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.LogoutFailed,
+                    null);
+
                 return Ok();
+            }
 
             if (string.IsNullOrWhiteSpace(user.RefreshTokenHash))
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.LogoutFailed,
+                    user.UserId);
+
                 return Ok();
+            }
 
             bool isValidRefreshToken =
                 BCrypt.Net.BCrypt.Verify(
@@ -291,7 +335,13 @@ namespace CarRental.API.Controllers
                     user.RefreshTokenHash);
 
             if (!isValidRefreshToken)
+            {
+                LogSecurityEvent(
+                    enSecurityEventType.LogoutFailed,
+                    user.UserId);
+
                 return Ok();
+            }
 
             bool revoked =
                 await _userService.RevokeRefreshTokenAsync(user.UserId);
@@ -302,6 +352,10 @@ namespace CarRental.API.Controllers
                     StatusCodes.Status500InternalServerError,
                     "Failed to revoke refresh token.");
             }
+
+            LogSecurityEvent(
+                enSecurityEventType.LogoutSucceeded,
+                user.UserId);
 
             return Ok("Logged out successfully.");
         }
