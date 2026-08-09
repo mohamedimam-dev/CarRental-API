@@ -5,6 +5,7 @@ using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {
@@ -50,15 +51,21 @@ namespace CarRental.API.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
-      
+
         [HttpPost("Add", Name = "AddCustomer")]
         public async Task<ActionResult<CustomerDTO>> AddCustomer(AddCustomerDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(userIdClaim, out int createdByUserId))
+                return Unauthorized();
+
             ServiceResult<CustomerDTO> result =
-                await _customerService.AddAsync(dto);
+                await _customerService.AddAsync(dto, createdByUserId);
 
             switch (result.Status)
             {
@@ -75,7 +82,8 @@ namespace CarRental.API.Controllers
                         result.Data);
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
