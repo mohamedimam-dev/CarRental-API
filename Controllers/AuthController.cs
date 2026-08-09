@@ -202,7 +202,7 @@ namespace CarRental.API.Controllers
                     enSecurityEventType.RefreshTokenRevoked,
                     user.UserId);
 
-                return Unauthorized("Refresh token has been revoked.");
+                return Unauthorized("Invalid refresh token.");
             }
 
             if (!user.RefreshTokenExpiresAt.HasValue ||
@@ -212,7 +212,7 @@ namespace CarRental.API.Controllers
                     enSecurityEventType.RefreshTokenExpired,
                     user.UserId);
 
-                return Unauthorized("Refresh token has expired.");
+                return Unauthorized("Invalid refresh token.");
             }
 
             if (string.IsNullOrWhiteSpace(user.RefreshTokenHash))
