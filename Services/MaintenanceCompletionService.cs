@@ -19,10 +19,11 @@ namespace CarRental.API.Services
 
 
         public async Task<ServiceResult<MaintenanceCompletionDTO>> AddAsync(
-            AddMaintenanceCompletionDTO dto)
+          AddMaintenanceCompletionDTO dto,
+          int createdByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+               .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<MaintenanceCompletionDTO>
@@ -67,7 +68,7 @@ namespace CarRental.API.Services
                 Notes = dto.Notes,
                 VehicleMileage = dto.VehicleMileage,
                 IsPassedInspection = dto.IsPassedInspection,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             _context.MaintenanceCompletions.Add(completion);
@@ -142,11 +143,12 @@ namespace CarRental.API.Services
         }
 
         public async Task<ServiceResult<MaintenanceCompletionDTO>> UpdateAsync(
-            int completionId,
-            UpdateMaintenanceCompletionDTO dto)
+          int completionId,
+          UpdateMaintenanceCompletionDTO dto,
+          int updatedByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.UpdatedByUserId);
+                .AnyAsync(u => u.UserId == updatedByUserId);
 
             if (!userExists)
                 return ServiceResult<MaintenanceCompletionDTO>
@@ -170,7 +172,7 @@ namespace CarRental.API.Services
             completion.VehicleMileage = dto.VehicleMileage;
             completion.IsPassedInspection = dto.IsPassedInspection;
 
-            completion.UpdatedByUserId = dto.UpdatedByUserId;
+            completion.UpdatedByUserId = updatedByUserId;
             completion.UpdatedDate = DateTime.Now;
 
             completion.Maintenance.Vehicle.Mileage = dto.VehicleMileage;

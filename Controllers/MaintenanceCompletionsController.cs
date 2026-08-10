@@ -4,6 +4,7 @@ using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {
@@ -18,6 +19,16 @@ namespace CarRental.API.Controllers
             IMaintenanceCompletionService maintenanceCompletionService)
         {
             _maintenanceCompletionService = maintenanceCompletionService;
+        }
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = 0;
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(userIdClaim, out userId);
         }
 
 
@@ -57,13 +68,18 @@ namespace CarRental.API.Controllers
         [Authorize(Roles = "Administrator, Manager")]
         [HttpPost("Add", Name = "AddMaintenanceCompletion")]
         public async Task<ActionResult<MaintenanceCompletionDTO>> AddMaintenanceCompletion(
-        AddMaintenanceCompletionDTO dto)
+          AddMaintenanceCompletionDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int createdByUserId))
+                return Unauthorized();
+
             ServiceResult<MaintenanceCompletionDTO> result =
-                await _maintenanceCompletionService.AddAsync(dto);
+                await _maintenanceCompletionService.AddAsync(
+                    dto,
+                    createdByUserId);
 
             switch (result.Status)
             {
@@ -83,7 +99,8 @@ namespace CarRental.API.Controllers
                         result.Data);
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
