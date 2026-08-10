@@ -4,6 +4,7 @@ using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {
@@ -17,6 +18,16 @@ namespace CarRental.API.Controllers
         public MaintenancesController(IMaintenanceService maintenanceService)
         {
             _maintenanceService = maintenanceService;
+        }
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = 0;
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(userIdClaim, out userId);
         }
 
 
@@ -55,13 +66,16 @@ namespace CarRental.API.Controllers
 
         [HttpPost("Add", Name = "AddMaintenance")]
         public async Task<ActionResult<MaintenanceDTO>> AddMaintenance(
-        AddMaintenanceDTO dto)
+          AddMaintenanceDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int createdByUserId))
+                return Unauthorized();
+
             ServiceResult<MaintenanceDTO> result =
-                await _maintenanceService.AddAsync(dto);
+                await _maintenanceService.AddAsync(dto, createdByUserId);
 
             switch (result.Status)
             {
@@ -81,7 +95,8 @@ namespace CarRental.API.Controllers
                         result.Data);
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -97,8 +112,12 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int updatedByUserId))
+                return Unauthorized();
+
             ServiceResult<MaintenanceDTO> result =
-                await _maintenanceService.UpdateAsync(maintenanceId, dto);
+                await _maintenanceService.UpdateAsync(
+                    maintenanceId, dto, updatedByUserId);
 
             switch (result.Status)
             {
@@ -116,17 +135,17 @@ namespace CarRental.API.Controllers
         [Authorize(Roles = "Administrator, Manager")]
         [HttpPut("{maintenanceId}/Cancel", Name = "CancelMaintenance")]
         public async Task<ActionResult> CancelMaintenance(
-        int maintenanceId,
-        CancelMaintenanceDTO dto)
+        int maintenanceId)
         {
             if (maintenanceId <= 0)
                 return BadRequest("Invalid Maintenance ID.");
-
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+           
+            if (!TryGetCurrentUserId(out int cancelledByUserId))
+                return Unauthorized();
 
             ServiceResult<bool> result =
-                await _maintenanceService.CancelAsync(maintenanceId, dto);
+                await _maintenanceService.CancelAsync(
+                    maintenanceId, cancelledByUserId);
 
             switch (result.Status)
             {

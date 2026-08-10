@@ -18,7 +18,5 @@ namespace CarRental.API.DTOs.Maintenance
         [Range(0, double.MaxValue)]
         public decimal Cost { get; set; }
 
-        [Required]
-        public int CreatedByUserId { get; set; }
     }
 }
