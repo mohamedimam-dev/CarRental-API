@@ -1,5 +1,6 @@
 ﻿using CarRental.API.Common;
 using CarRental.API.DTOs.MaintenanceCompletion;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,11 +15,14 @@ namespace CarRental.API.Controllers
     public class MaintenanceCompletionsController : ControllerBase
     {
         private readonly IMaintenanceCompletionService _maintenanceCompletionService;
+        private readonly IAuditLogService _auditLogService;
 
         public MaintenanceCompletionsController(
-            IMaintenanceCompletionService maintenanceCompletionService)
+          IMaintenanceCompletionService maintenanceCompletionService,
+          IAuditLogService auditLogService)
         {
             _maintenanceCompletionService = maintenanceCompletionService;
+            _auditLogService = auditLogService;
         }
 
         private bool TryGetCurrentUserId(out int userId)
@@ -134,6 +138,12 @@ namespace CarRental.API.Controllers
                     return BadRequest(result.Message);
 
                 case ServiceResultStatus.Success:
+                    _auditLogService.Add(
+                       updatedByUserId,
+                       enAuditAction.Update.ToString(),
+                       enAuditEntity.MaintenanceCompletion.ToString(),
+                       completionId,
+                       HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
                     return Ok(result.Data);
 
                 default:
