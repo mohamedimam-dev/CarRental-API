@@ -1,6 +1,7 @@
 ﻿using CarRental.API.Common;
 using CarRental.API.DTOs.RentalBookings;
 using CarRental.API.DTOs.RentalBookings.CarRental.API.DTOs.RentalBookings;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,10 +16,14 @@ namespace CarRental.API.Controllers
     public class RentalBookingsController : ControllerBase
     {
         private readonly IRentalBookingService _rentalBookingService;
+        private readonly IAuditLogService _auditLogService;
 
-        public RentalBookingsController(IRentalBookingService rentalBookingService)
+        public RentalBookingsController(
+          IRentalBookingService rentalBookingService,
+          IAuditLogService auditLogService)
         {
             _rentalBookingService = rentalBookingService;
+            _auditLogService = auditLogService;
         }
 
         private bool TryGetCurrentUserId(out int userId)
@@ -119,6 +124,13 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+                    _auditLogService.Add(
+                    cancelledByUserId,
+                    enAuditAction.Cancel.ToString(),
+                    enAuditEntity.RentalBooking.ToString(),
+                    bookingId,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown");
+
                     return NoContent();
 
                 default:
