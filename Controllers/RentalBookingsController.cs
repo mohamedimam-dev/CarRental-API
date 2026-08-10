@@ -5,6 +5,7 @@ using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {   
@@ -20,6 +21,15 @@ namespace CarRental.API.Controllers
             _rentalBookingService = rentalBookingService;
         }
 
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = 0;
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(userIdClaim, out userId);
+        }
 
         [HttpGet("{bookingId}", Name = "GetRentalBookingById")]
         public async Task<ActionResult<RentalBookingDTO>> GetRentalBookingById(int bookingId)
@@ -49,8 +59,13 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int createdByUserId))
+                return Unauthorized();
+
             ServiceResult<RentalBookingDTO> result =
-                await _rentalBookingService.AddAsync(dto);
+                await _rentalBookingService.AddAsync(
+                    dto,
+                    createdByUserId);
 
             switch (result.Status)
             {
@@ -76,8 +91,7 @@ namespace CarRental.API.Controllers
 
         [HttpPut("{bookingId}/Cancel", Name = "CancelRentalBooking")]
         public async Task<ActionResult> CancelRentalBooking(
-          int bookingId,
-          CancelRentalBookingDTO dto)
+          int bookingId)
         {
             if (bookingId <= 0)
                 return BadRequest("Invalid Booking ID.");
@@ -85,8 +99,13 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int cancelledByUserId))
+                return Unauthorized();
+
             ServiceResult<bool> result =
-                await _rentalBookingService.CancelAsync(bookingId, dto);
+                await _rentalBookingService.CancelAsync(
+                    bookingId, 
+                    cancelledByUserId);
 
             switch (result.Status)
             {

@@ -19,7 +19,9 @@ namespace CarRental.API.Services
         }
 
 
-        public async Task<ServiceResult<RentalBookingDTO>> AddAsync(AddRentalBookingDTO dto)
+        public async Task<ServiceResult<RentalBookingDTO>> AddAsync(
+      AddRentalBookingDTO dto,
+      int createdByUserId)
         {
             bool customerExists = await _context.Customers
                 .AnyAsync(c => c.CustomerId == dto.CustomerId);
@@ -29,7 +31,7 @@ namespace CarRental.API.Services
                     .NotFound("Customer not found.");
 
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+                .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<RentalBookingDTO>
@@ -75,13 +77,13 @@ namespace CarRental.API.Services
                 InitialTotalDueAmount = initialTotalDueAmount,
                 InitialCheckNotes = dto.InitialCheckNotes,
                 BookingStatusId = (int)enBookingStatus.Reserved,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             booking.RentalTransactions.Add(new RentalTransaction
             {
                 PaidInitialTotalDueAmount = initialTotalDueAmount,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             });
 
             _context.RentalBookings.Add(booking);
@@ -112,11 +114,11 @@ namespace CarRental.API.Services
         }
 
         public async Task<ServiceResult<bool>> CancelAsync(
-            int bookingId,
-            CancelRentalBookingDTO dto)
+          int bookingId,
+          int cancelledByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CancelledByUserId);
+                .AnyAsync(u => u.UserId == cancelledByUserId);
 
             if (!userExists)
                 return ServiceResult<bool>
@@ -164,7 +166,7 @@ namespace CarRental.API.Services
             transaction.TotalRefundedAmount = refundAmount;
             transaction.TotalRemaining = 0;
             transaction.UpdatedTransactionDate = DateTime.Now;
-            transaction.UpdatedByUserId = dto.CancelledByUserId;
+            transaction.UpdatedByUserId = cancelledByUserId;
             transaction.UpdatedDate = DateTime.Now;
 
             booking.BookingStatusId = (int)enBookingStatus.Cancelled;

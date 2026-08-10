@@ -6,7 +6,9 @@ namespace CarRental.API.Services.Interfaces
 {
     public interface IRentalBookingService
     {
-        Task<ServiceResult<RentalBookingDTO>> AddAsync(AddRentalBookingDTO dto);
+        Task<ServiceResult<RentalBookingDTO>> AddAsync(
+            AddRentalBookingDTO dto,
+            int createdByUserId);
 
         Task<ServiceResult<RentalBookingDTO>> GetByIdAsync(int bookingId);
        
@@ -14,6 +16,6 @@ namespace CarRental.API.Services.Interfaces
 
         Task<ServiceResult<bool>> CancelAsync(
             int bookingId,
-            CancelRentalBookingDTO dto);
+            int cancelledByUserId);
     }
 }
