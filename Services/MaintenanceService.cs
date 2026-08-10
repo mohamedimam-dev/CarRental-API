@@ -18,10 +18,12 @@ namespace CarRental.API.Services
         }
 
 
-        public async Task<ServiceResult<MaintenanceDTO>> AddAsync(AddMaintenanceDTO dto)
+        public async Task<ServiceResult<MaintenanceDTO>> AddAsync(
+          AddMaintenanceDTO dto,
+          int createdByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+                .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<MaintenanceDTO>
@@ -55,7 +57,7 @@ namespace CarRental.API.Services
                 ExpectedFinishDate = dto.ExpectedFinishDate,
                 Cost = dto.Cost,
                 MaintenanceStatusId = (int)enMaintenanceStatus.InProgress,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             _context.Maintenances.Add(maintenance);
@@ -83,10 +85,10 @@ namespace CarRental.API.Services
 
         public async Task<ServiceResult<bool>> CancelAsync(
             int maintenanceId,
-            CancelMaintenanceDTO dto)
+            int cancelledByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CancelledByUserId);
+                .AnyAsync(u => u.UserId == cancelledByUserId);
 
             if (!userExists)
                 return ServiceResult<bool>
@@ -106,7 +108,7 @@ namespace CarRental.API.Services
 
             maintenance.MaintenanceStatusId = (int)enMaintenanceStatus.Cancelled;
 
-            maintenance.UpdatedByUserId = dto.CancelledByUserId;
+            maintenance.UpdatedByUserId = cancelledByUserId;
             maintenance.UpdatedDate = DateTime.Now;
 
             maintenance.Vehicle.IsAvailableForRent = true;
@@ -162,7 +164,8 @@ namespace CarRental.API.Services
 
         public async Task<ServiceResult<MaintenanceDTO>> UpdateAsync(
             int maintenanceId,
-            UpdateMaintenanceDTO dto)
+            UpdateMaintenanceDTO dto,
+            int updatedByUserId)
         {
             Maintenance? maintenance = await _context.Maintenances
                 .FindAsync(maintenanceId);
@@ -172,7 +175,7 @@ namespace CarRental.API.Services
                     .NotFound("Maintenance not found.");
 
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.UpdatedByUserId);
+                .AnyAsync(u => u.UserId == updatedByUserId);
 
             if (!userExists)
                 return ServiceResult<MaintenanceDTO>
@@ -183,7 +186,7 @@ namespace CarRental.API.Services
             maintenance.ExpectedFinishDate = dto.ExpectedFinishDate;
             maintenance.Cost = dto.Cost;
 
-            maintenance.UpdatedByUserId = dto.UpdatedByUserId;
+            maintenance.UpdatedByUserId = updatedByUserId;
             maintenance.UpdatedDate = DateTime.Now;
 
             await _context.SaveChangesAsync();

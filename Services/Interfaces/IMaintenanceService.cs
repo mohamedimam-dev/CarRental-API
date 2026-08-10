@@ -5,15 +5,18 @@ namespace CarRental.API.Services.Interfaces
 {
     public interface IMaintenanceService
     {
-        Task<ServiceResult<MaintenanceDTO>> AddAsync(AddMaintenanceDTO dto);
-
+        Task<ServiceResult<MaintenanceDTO>> AddAsync(
+            AddMaintenanceDTO dto,
+            int createdByUserId);
+      
         Task<ServiceResult<MaintenanceDTO>> UpdateAsync(
             int maintenanceId,
-            UpdateMaintenanceDTO dto);
-     
+            UpdateMaintenanceDTO dto,
+            int updatedByUserId);
+
         Task<ServiceResult<bool>> CancelAsync(
             int maintenanceId,
-            CancelMaintenanceDTO dto);
+            int cancelledByUserId);
 
         Task<ServiceResult<MaintenanceDTO>> GetByIdAsync(int maintenanceId);
        
