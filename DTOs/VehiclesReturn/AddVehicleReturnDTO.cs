@@ -23,8 +23,6 @@ namespace CarRental.API.DTOs.VehiclesReturn
         [Range(0, double.MaxValue)]
         public decimal AdditionalCharges { get; set; }
 
-        [Required]
-        [Range(1, int.MaxValue)]
-        public int CreatedByUserId { get; set; }
+
     }
 }

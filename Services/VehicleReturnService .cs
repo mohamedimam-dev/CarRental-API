@@ -18,10 +18,12 @@ namespace CarRental.API.Services
         }
 
 
-        public async Task<ServiceResult<VehicleReturnDTO>> AddAsync(AddVehicleReturnDTO dto)
+        public async Task<ServiceResult<VehicleReturnDTO>> AddAsync(
+            AddVehicleReturnDTO dto,
+            int createdByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+                .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<VehicleReturnDTO>
@@ -78,7 +80,7 @@ namespace CarRental.API.Services
                 FinalCheckNotes = dto.FinalCheckNotes,
                 AdditionalCharges = dto.AdditionalCharges,
                 ActualTotalDueAmount = actualTotalDueAmount,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             _context.VehicleReturns.Add(vehicleReturn);
@@ -111,7 +113,7 @@ namespace CarRental.API.Services
             }
 
             transaction.UpdatedTransactionDate = DateTime.Now;
-            transaction.UpdatedByUserId = dto.CreatedByUserId;
+            transaction.UpdatedByUserId = createdByUserId;
             transaction.UpdatedDate = DateTime.Now;
 
             booking.Vehicle.Mileage = dto.Mileage;

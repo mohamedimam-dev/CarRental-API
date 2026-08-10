@@ -4,6 +4,7 @@ using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {
@@ -18,6 +19,16 @@ namespace CarRental.API.Controllers
             IVehicleReturnService vehicleReturnService)
         {
             _vehicleReturnService = vehicleReturnService;
+        }
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = 0;
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(userIdClaim, out userId);
         }
 
         [HttpGet("{returnId}", Name = "GetVehicleReturnById")]
@@ -74,8 +85,13 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int createdByUserId))
+                return Unauthorized();
+
             ServiceResult<VehicleReturnDTO> result =
-                await _vehicleReturnService.AddAsync(dto);
+                await _vehicleReturnService.AddAsync(
+                    dto,
+                    createdByUserId); 
 
             switch (result.Status)
             {
