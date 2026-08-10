@@ -7,12 +7,14 @@ namespace CarRental.API.Services.Interfaces
     {
 
         Task<ServiceResult<MaintenanceCompletionDTO>> AddAsync(
-            AddMaintenanceCompletionDTO dto);
+            AddMaintenanceCompletionDTO dto,
+            int createdByUserId);
 
         Task<ServiceResult<MaintenanceCompletionDTO>> UpdateAsync(
             int completionId,
-            UpdateMaintenanceCompletionDTO dto);
-      
+            UpdateMaintenanceCompletionDTO dto,
+            int updatedByUserId);
+
         Task<ServiceResult<MaintenanceCompletionDTO>> GetByIdAsync(
             int completionId);
        

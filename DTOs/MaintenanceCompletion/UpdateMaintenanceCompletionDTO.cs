@@ -16,7 +16,6 @@ namespace CarRental.API.DTOs.MaintenanceCompletion
         [Required]
         public bool IsPassedInspection { get; set; }
 
-        [Required]
-        public int UpdatedByUserId { get; set; }
+
     }
 }
