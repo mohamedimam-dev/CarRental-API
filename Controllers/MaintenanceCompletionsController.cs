@@ -116,10 +116,14 @@ namespace CarRental.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!TryGetCurrentUserId(out int updatedByUserId))
+                return Unauthorized();
+
             ServiceResult<MaintenanceCompletionDTO> result =
                 await _maintenanceCompletionService.UpdateAsync(
                     completionId,
-                    dto);
+                    dto,
+                    updatedByUserId);
 
             switch (result.Status)
             {
