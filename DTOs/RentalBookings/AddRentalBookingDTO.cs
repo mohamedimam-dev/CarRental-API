@@ -28,7 +28,6 @@ namespace CarRental.API.DTOs.RentalBookings
         [StringLength(500)]
         public string? InitialCheckNotes { get; set; }
 
-        [Range(1, int.MaxValue)]
-        public int CreatedByUserId { get; set; }
+
     }
 }
