@@ -16,10 +16,12 @@ namespace CarRental.API.Services
             _context = context;
         }
 
-        public async Task<ServiceResult<VehicleDTO>> AddAsync(AddVehicleDTO dto)
+        public async Task<ServiceResult<VehicleDTO>> AddAsync(
+            AddVehicleDTO dto,
+            int createdByUserId)
         {
             bool userExists = await _context.Users
-                .AnyAsync(u => u.UserId == dto.CreatedByUserId);
+                .AnyAsync(u => u.UserId == createdByUserId);
 
             if (!userExists)
                 return ServiceResult<VehicleDTO>
@@ -67,7 +69,7 @@ namespace CarRental.API.Services
                 CategoryId = dto.CategoryId,
                 RentalPricePerDay = dto.RentalPricePerDay,
                 IsAvailableForRent = dto.IsAvailableForRent,
-                CreatedByUserId = dto.CreatedByUserId
+                CreatedByUserId = createdByUserId
             };
 
             _context.Vehicles.Add(vehicle);
