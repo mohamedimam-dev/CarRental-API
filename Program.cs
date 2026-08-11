@@ -1,12 +1,14 @@
+using CarRental.API.Authorization;
 using CarRental.API.Data;
 using CarRental.API.Services;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +39,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationHandler, UserOwnerOrAdminHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("UserOwnerOrAdmin", policy =>
+        policy.Requirements.Add(new UserOwnerOrAdminRequirement()));
+});
 
 builder.Services.AddRateLimiter(options =>
 {
