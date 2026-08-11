@@ -1,10 +1,12 @@
 ﻿using CarRental.API.Common;
 using CarRental.API.DTOs.Users;
 using CarRental.API.Entities;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CarRental.API.Controllers
 {
@@ -15,13 +17,16 @@ namespace CarRental.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IAuthorizationService _authorizationService;
+        private readonly IAuditLogService _auditLogService;
 
         public UsersController(
             IUserService userService,
-            IAuthorizationService authorizationService)
+            IAuthorizationService authorizationService,
+            IAuditLogService auditLogService)
         {
             _userService = userService;
             _authorizationService = authorizationService;
+            _auditLogService = auditLogService;
         }
 
         [Authorize(Roles = "Administrator")]
@@ -84,21 +89,37 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+
+                    string? userIdClaim =
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.Create.ToString(),
+                            enAuditEntity.User.ToString(),
+                            result.Data!.UserId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return CreatedAtRoute(
                         "GetUserById",
                         new { userId = result.Data!.UserId },
                         result.Data);
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
         [Authorize(Roles = "Administrator")]
         [HttpPut("{userId}", Name = "UpdateUser")]
         public async Task<ActionResult<UserDTO>> UpdateUser(
-        int userId,
-        UpdateUserDTO dto)
+          int userId,
+          UpdateUserDTO dto)
         {
             if (userId <= 0)
                 return BadRequest("Invalid User ID.");
@@ -115,10 +136,26 @@ namespace CarRental.API.Controllers
                     return NotFound(result.Message);
 
                 case ServiceResultStatus.Success:
+
+                    string? userIdClaim =
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.Update.ToString(),
+                            enAuditEntity.User.ToString(),
+                            userId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return Ok(result.Data);
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -141,10 +178,26 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+
+                    string? userIdClaim =
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.Deactivate.ToString(),
+                            enAuditEntity.User.ToString(),
+                            userId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return NoContent();
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -187,10 +240,26 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+
+                    string? userIdClaim =
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.ChangeCredentials.ToString(),
+                            enAuditEntity.User.ToString(),
+                            userId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return NoContent();
 
                 default:
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError);
             }
         }
 
