@@ -1,6 +1,7 @@
 ﻿using CarRental.API.Common;
 using CarRental.API.DTOs.Vehicles;
 using CarRental.API.Entities;
+using CarRental.API.Enums;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,12 +16,15 @@ namespace CarRental.API.Controllers
     public class VehiclesController : ControllerBase
     {
         private readonly IVehicleService _vehicleService;
+        private readonly IAuditLogService _auditLogService;
 
-        public VehiclesController(IVehicleService vehicleService)
+        public VehiclesController(
+          IVehicleService vehicleService,
+          IAuditLogService auditLogService)
         {
             _vehicleService = vehicleService;
+            _auditLogService = auditLogService;
         }
-
         private bool TryGetCurrentUserId(out int userId)
         {
             userId = 0;
@@ -121,6 +125,20 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+                    string? userIdClaim =
+                       User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.Update.ToString(),
+                            enAuditEntity.Vehicle.ToString(),
+                            vehicleId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return Ok(result.Data);
 
                 default:
@@ -147,6 +165,20 @@ namespace CarRental.API.Controllers
                     return Conflict(result.Message);
 
                 case ServiceResultStatus.Success:
+                    string? userIdClaim =
+                       User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _auditLogService.Add(
+                            currentUserId,
+                            enAuditAction.Delete.ToString(),
+                            enAuditEntity.Vehicle.ToString(),
+                            vehicleId,
+                            HttpContext.Connection.RemoteIpAddress?.ToString()
+                                ?? "Unknown");
+                    }
+
                     return NoContent();
 
                 default:
