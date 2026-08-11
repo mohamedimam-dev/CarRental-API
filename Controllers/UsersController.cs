@@ -1,5 +1,6 @@
 ﻿using CarRental.API.Common;
 using CarRental.API.DTOs.Users;
+using CarRental.API.Entities;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -13,10 +14,14 @@ namespace CarRental.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAuthorizationService _authorizationService;
 
-        public UsersController(IUserService userService)
+        public UsersController(
+            IUserService userService,
+            IAuthorizationService authorizationService)
         {
             _userService = userService;
+            _authorizationService = authorizationService;
         }
 
         [Authorize(Roles = "Administrator")]
@@ -35,6 +40,14 @@ namespace CarRental.API.Controllers
         {
             if (userId <= 0)
                 return BadRequest("Invalid User ID.");
+
+            var authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            userId,
+            "UserOwnerOrAdmin");
+
+            if (!authResult.Succeeded)
+                return Forbid();
 
             ServiceResult<UserDTO> result =
                 await _userService.GetByIdAsync(userId);
@@ -142,14 +155,22 @@ namespace CarRental.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> ChangePassword(
-         int userId,
-         ChangePasswordDTO dto)
+          int userId,
+          ChangePasswordDTO dto)
         {
             if (userId <= 0)
                 return BadRequest("Invalid User ID.");
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var authResult = await _authorizationService.AuthorizeAsync(
+                User,
+                userId,
+                "UserOwnerOrAdmin");
+
+            if (!authResult.Succeeded)
+                return Forbid();
 
             ServiceResult<bool> result =
                 await _userService.ChangePasswordAsync(userId, dto);
