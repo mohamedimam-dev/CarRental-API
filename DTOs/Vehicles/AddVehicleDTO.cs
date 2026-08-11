@@ -51,8 +51,5 @@ namespace CarRental.API.DTOs.Vehicles
         [Required]
         public bool IsAvailableForRent { get; set; }
 
-        [Required]
-        [Range(1, int.MaxValue)]
-        public int CreatedByUserId { get; set; }
     }
 }

@@ -5,7 +5,9 @@ namespace CarRental.API.Services.Interfaces
 {
     public interface IVehicleService
     {
-        Task<ServiceResult<VehicleDTO>> AddAsync(AddVehicleDTO dto);
+        Task<ServiceResult<VehicleDTO>> AddAsync(
+            AddVehicleDTO dto,
+            int createdByUserId);
 
         Task<ServiceResult<VehicleDTO>> GetByIdAsync(int vehicleId);
        
