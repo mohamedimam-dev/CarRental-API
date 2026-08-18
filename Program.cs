@@ -1,5 +1,6 @@
 using CarRental.API.Authorization;
 using CarRental.API.Data;
+using CarRental.API.ExceptionHandling;
 using CarRental.API.Services;
 using CarRental.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,7 +39,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationHandler, UserOwnerOrAdminHandler>();
 builder.Services.AddAuthorization(options =>
 {
@@ -66,6 +66,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 // Register Swagger generator and customize its behavior.
@@ -176,6 +177,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
